@@ -6,7 +6,6 @@ const os = require('os')
 const ip = require('ip')
 const ping = require('ping')
 const program = require('commander')
-const ProgressBar = require('progress')
 const Promise = require('bluebird')
 // local
 const pkg = require('./package.json')
@@ -16,21 +15,9 @@ const BASE_TIMEOUT = 250 / 1000
 const BASE_CONCURRENCY = 50
 
 const cidrList = []
-const timeouts = {}
-
 /**
  * Parsing functions
  */
-function shuffle (a) {
-  let j, x, i
-  for (i = a.length; i; i--) {
-    j = Math.floor(Math.random() * i)
-    x = a[i - 1]
-    a[i - 1] = a[j]
-    a[j] = x
-  }
-}
-
 function pingHost (host, timeout) {
   return ping.promise.probe(host, {
     number: 1,
@@ -40,19 +27,26 @@ function pingHost (host, timeout) {
 }
 
 function printResponse (outcome) {
-  const { host } = outcome
-
-  if (outcome.alive) {
-    console.log(`Reply from ${host}: time=${outcome.time || 1}ms`)
-    return Promise.resolve()
-  } else if (timeouts[host] == null) {
-    timeouts[host] = true
-    return pingHost(host, BASE_TIMEOUT * 2).then(printResponse)
-  }
+  if (!outcome.alive) return
+  console.log(`Reply from ${outcome.host}: time=${outcome.time || 1}ms`)
 }
 
 function scan (hosts) {
-  return Promise.map(hosts, host => pingHost(host).then(printResponse), { concurrency: BASE_CONCURRENCY })
+  const retries = []
+  const pingAndPrint = host => pingHost(host).then(printResponse)
+  const options = { concurrency: BASE_CONCURRENCY }
+
+  const checkFailure = (outcome) => {
+    if (outcome.alive) printResponse(outcome)
+    else retries.push(outcome.host)
+  }
+
+  return Promise
+    .map(hosts, host => pingHost(host).then(checkFailure), options)
+    .then(() => {
+      console.log('Retrying failed hosts')
+      return Promise.map(retries, pingAndPrint, options)
+    })
 }
 
 /**
@@ -84,13 +78,13 @@ function buildHostList () {
  */
 function discoverCIDR () {
   const interfaces = os.networkInterfaces()
-  let list = []
+  const list = []
 
   for (const key in interfaces) {
     const ipv4 = interfaces[key].filter(iface => iface.internal === false && iface.family === 'IPv4')
     if (ipv4[0] == null) continue
     const subnet = ip.subnet(ipv4[0].address, ipv4[0].netmask)
-    list = list.concat(iputils.ipArray(subnet.firstAddress, subnet.lastAddress))
+    iputils.ipArray(subnet.firstAddress, subnet.lastAddress).forEach(ip => list.push(ip))
   }
   return list
 }
@@ -110,7 +104,4 @@ program.command('pscan [cidr] [otherCidr...]')
 program.parse(process.argv)
 
 const hosts = buildHostList()
-// in case multiple CIDR are specified, ping command(s) will be shuffled across netmasks
-// if (cidrList.length > 0) shuffle(hosts)
-
 scan(hosts)
