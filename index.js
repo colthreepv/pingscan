@@ -90,7 +90,7 @@ function discoverCIDR () {
  */
 program.version(pkg.version)
 
-program.command('pscan [cidr] [otherCidr...]')
+program.command('pingscan [cidr] [otherCidr...]')
 // .option('-c --concurrency <n>', 'PING execution concurrency', 2)
 .action((cidr, otherCidr) => {
   if (cidr != null) cidrList.push(cidr)

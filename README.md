@@ -1,15 +1,15 @@
-pscan
+pingscan
 =====
 
-pscan is a simple tool for ICMP scanning, trying to detect if there are alive devices near you (or just devices that reply to ICMP ping packets)
+pingscan is a simple tool for ICMP scanning, trying to detect if there are alive devices near you (or just devices that reply to ICMP ping packets)
 
 # How to use
 
-`pscan` will enumerate all the subnets available in your computer and ping all the hosts over all the networks
+`pingscan` will enumerate all the subnets available in your computer and ping all the hosts over all the networks
 
-`pscan [cidr] [anothercidr]` will send ICMP packets only to the
+`pingscan [cidr] [anothercidr]` will send ICMP packets only to the
 
-**Example**: `pscan 1.1.2.1/16` will scan _255*255_ hosts from 1.1.1.1 to 1.1.254.254
+**Example**: `pingscan 1.1.2.1/16` will scan _255*255_ hosts from 1.1.1.1 to 1.1.254.254
 
 
 # Change Log

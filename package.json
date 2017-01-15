@@ -1,13 +1,17 @@
 {
   "name": "pingscan",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "simple tool that looks for ICMP replies in multiple subnets",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/colthreepv/pingscan.git"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "colthreepv <mister.gamer@gmail.com>",
+  "license": "MIT",
   "dependencies": {
     "bluebird": "^3.4.7",
     "ip": "^1.1.4",
