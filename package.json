@@ -1,7 +1,7 @@
 {
   "name": "pingscan",
-  "version": "1.0.0",
-  "description": "",
+  "version": "2.0.0",
+  "description": "simple tool that looks for ICMP replies in multiple subnets",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,6 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "ping": "^0.2.1"
+    "bluebird": "^3.4.7",
+    "ip": "^1.1.4",
+    "net-ping": "^1.2.0",
+    "raw-socket": "github:colthreepv/node-raw-socket#prebuilt"
   }
 }

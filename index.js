@@ -4,49 +4,45 @@
 const os = require('os')
 // npm
 const ip = require('ip')
-const ping = require('ping')
+const ping = require('net-ping')
 const program = require('commander')
 const Promise = require('bluebird')
 // local
 const pkg = require('./package.json')
 const iputils = require('./ip-utils')
 
-const BASE_TIMEOUT = 250 / 1000
-const BASE_CONCURRENCY = 50
+const BASE_TIMEOUT = 500
+const BASE_CONCURRENCY = 1000
+const session = ping.createSession({ packetSize: 64, timeout: BASE_TIMEOUT, retries: 1 })
+
+const { RequestTimedOutError } = ping
 
 const cidrList = []
 /**
- * Parsing functions
+ * Wrap callback-style pingHost
  */
-function pingHost (host, timeout) {
-  return ping.promise.probe(host, {
-    number: 1,
-    numeric: true,
-    timeout: timeout || BASE_TIMEOUT,
+function pingHost (host) {
+  return new Promise((resolve, reject) => {
+    session.pingHost(host, (err, target, sent, rcvd) => {
+      if (err) return reject(err)
+
+      return resolve({ target, roundtrip: (rcvd - sent) })
+    })
   })
 }
 
-function printResponse (outcome) {
-  if (!outcome.alive) return
-  console.log(`Reply from ${outcome.host}: time=${outcome.time || 1}ms`)
-}
-
 function scan (hosts) {
-  const retries = []
-  const pingAndPrint = host => pingHost(host).then(printResponse)
   const options = { concurrency: BASE_CONCURRENCY }
 
-  const checkFailure = (outcome) => {
-    if (outcome.alive) printResponse(outcome)
-    else retries.push(outcome.host)
+  const timedOut = () => Promise.resolve() // suppress timeout errors
+  const eachHost = (host) => {
+    return pingHost(host)
+      .then(outcome => console.log(`Reply from ${host}: time=${outcome.roundtrip || 1}ms`))
+      // .catch(RequestTimedOutError, () => console.log(`Dead ${host}`))
+      .catch(RequestTimedOutError, timedOut)
   }
 
-  return Promise
-    .map(hosts, host => pingHost(host).then(checkFailure), options)
-    .then(() => {
-      console.log('Retrying failed hosts')
-      return Promise.map(retries, pingAndPrint, options)
-    })
+  return Promise.map(hosts, eachHost, options)
 }
 
 /**
